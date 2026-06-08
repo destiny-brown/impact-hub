@@ -1,10 +1,8 @@
 import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   const volunteerRequests = await prisma.volunteerRequest.findMany();
-
-  return new Response(JSON.stringify(volunteerRequests), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  
+  return NextResponse.json(volunteerRequests);
 }

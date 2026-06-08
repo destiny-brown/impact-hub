@@ -1,10 +1,11 @@
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../src/generated/prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
+  
 }
 
 enum RequestStatus {
@@ -14,14 +15,16 @@ enum RequestStatus {
   WITHDRAWN
 }
 
-model Charity {
+model Event {
   id                String             @id @default(cuid())
-  name              String
+  title             String
   slug              String             @unique
   description       String?
-  websiteUrl        String?
+  location          String
+  date              DateTime
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  capacity          Int?
   volunteerRequests VolunteerRequest[]
 }
 
@@ -40,7 +43,7 @@ model Volunteer {
 model VolunteerRequest {
   id                 String        @id @default(cuid())
   volunteerId        String
-  charityId          String
+  eventId            String
   message            String?
   status             RequestStatus @default(PENDING)
   requestedStartDate DateTime?
@@ -51,9 +54,9 @@ model VolunteerRequest {
   updatedAt          DateTime      @updatedAt
 
   volunteer          Volunteer     @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
-  charity            Charity       @relation(fields: [charityId], references: [id], onDelete: Cascade)
+  event              Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([volunteerId])
-  @@index([charityId])
+  @@index([eventId])
   @@index([status])
 }
