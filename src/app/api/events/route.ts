@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server"
 
+//Create a new event
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -30,3 +31,9 @@ export async function POST(request: Request) {
     }
 }
 
+//Get all events
+export async function GET(Request: Request) {
+    const events = await prisma.event.findMany();
+    return NextResponse.json(events);
+
+}
