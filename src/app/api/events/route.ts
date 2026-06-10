@@ -35,5 +35,4 @@ export async function POST(request: Request) {
 export async function GET(Request: Request) {
     const events = await prisma.event.findMany();
     return NextResponse.json(events);
-
 }
