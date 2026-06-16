@@ -1,9 +1,11 @@
-import Image from "next/image";
-
 export default function Home() {
   return (
-    <div className="text-blue-500 text-3xl font-bold">
-      Tailwind is working
+    <div style={{ padding: 20 }}>
+      <h1>Impact Hub</h1>
+
+      <a href="/events">Go to Events</a>
+      <br />
+      <a href="/dashboard">Go to Dashboard</a>
     </div>
   );
 }
