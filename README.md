@@ -43,7 +43,7 @@ impact-hub/
 
 ## Data Model
 
-Prisma models are defined in `/home/runner/work/impact-hub/impact-hub/prisma/schema.prisma`.
+Prisma models are defined in `prisma/schema.prisma`.
 
 - **Event**
   - Core event details (`title`, `slug`, `description`, `location`, `date`, optional `capacity`)
@@ -55,10 +55,10 @@ Prisma models are defined in `/home/runner/work/impact-hub/impact-hub/prisma/sch
 
 ## Environment Variables
 
-Create a `.env` file in `/home/runner/work/impact-hub/impact-hub` with:
+Create a `.env` file in the repository root with:
 
 ```bash
-DATABASE_URL="******HOST:PORT/DB_NAME"
+DATABASE_URL="<postgres-connection-string>"
 KAFKA_BROKER="HOST:PORT"
 KAFKA_USERNAME="your-username"
 KAFKA_PASSWORD="your-password"
@@ -95,7 +95,7 @@ Notes:
 
 ## Available Scripts
 
-From `/home/runner/work/impact-hub/impact-hub`:
+From the repository root:
 
 - `npm run dev` – Start local development server
 - `npm run lint` – Run ESLint
