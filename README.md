@@ -1,13 +1,17 @@
 # Impact Hub
 
-Impact Hub is a Next.js + Prisma application for coordinating volunteer participation in community events.  
-It provides:
+Impact Hub is a full-stack event management platform for coordinating volunteer participation in community events.
+It enables event creation, volunteer onboarding, and request management, and incorporates an event-driven architecture using Kafka to process lifecycle events asynchronously.
 
-- Event creation and listing
-- Volunteer profile creation (API)
-- Volunteer request submission and status management
-- A simple dashboard to approve/reject volunteer requests
-- Kafka event publishing for request lifecycle updates
+## Features
+
+- **Event Management:** Create and view community events
+- **Volunteer Profiles:** Register and manage volunteer information via API
+- **Request System:**
+  - Volunteers can apply to events
+  - Track request lifecycle (PENDING → APPROVED / REJECTED / WITHDRAWN)
+- **Admin Dashboard:** Approve or reject volunteer requests
+- **Event Driven Processing:** Kafka integration publishes request lifecycle events
 
 ## Tech Stack
 
@@ -151,6 +155,13 @@ Request lifecycle events are produced to Kafka topic `requests`:
 
 - Build requires a valid `DATABASE_URL`; otherwise API route pre-render checks fail.
 - Lint currently reports existing issues in repository source files that are independent of this documentation update.
+
+## CI/CD
+
+This project uses GitHub + Vercel CI/CD:
+- Automatically builds on every push
+- Automatically deploys to production
+- Enables continuous integration and rapid iteration
 
 ## Future Improvements
 
