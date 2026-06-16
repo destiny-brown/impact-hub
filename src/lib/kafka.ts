@@ -2,22 +2,34 @@ import { Kafka } from "kafkajs";
 
 const kafka = new Kafka({
   clientId: "impact-hub",
-  brokers: ["impact-hub-kafka-impact-hub.e.aivencloud.com:22479"],
+  brokers: [process.env.KAFKA_BROKER!],
 
   ssl: true,
 
   sasl: {
     mechanism: "plain",
-    username: "avnadmin",
-    password: "AVNS_YpfbuenZBJghMjR-GwX",
+
+    username: process.env.KAFKA_USERNAME!,
+    password: process.env.KAFKA_PASSWORD!,
   },
 });
 
+
 const producer = kafka.producer();
+
+let isConnected = false;
+
+async function connectProducer() {
+  if (!isConnected) {
+    await producer.connect();
+    isConnected = true;
+    console.log("Kafka connected");
+  }
+}
 
 export async function sendEvent(message: any) {
   try {
-    await producer.connect();
+    await connectProducer();
 
     await producer.send({
       topic: "requests",
@@ -27,8 +39,6 @@ export async function sendEvent(message: any) {
         },
       ],
     });
-
-    await producer.disconnect();
 
     console.log("Event sent:", message);
   } catch (error) {
