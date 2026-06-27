@@ -1,4 +1,5 @@
 import { Kafka } from "kafkajs";
+import { recordPublicActivity } from "@/lib/activity";
 
 export const REQUESTS_TOPIC = "requests";
 
@@ -36,6 +37,7 @@ async function connectProducer() {
 
 export async function sendEvent(event: RequestEvent) {
   try {
+    recordPublicActivity(event);
     await connectProducer();
 
     await producer.send({
