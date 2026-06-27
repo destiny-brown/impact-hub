@@ -1,7 +1,8 @@
 # Impact Hub
 
-Impact Hub is a full-stack event management platform for coordinating volunteer participation in community events.
-It enables event creation, volunteer onboarding, request lifecycle management, admin moderation, and event-driven activity processing via Kafka.
+Impact Hub is a full-stack event management platform that coordinates volunteer participation in community events through role-based workflows, request lifecycle management, and admin moderation. It leverages Kafka to enable event-driven processing for scalable and decoupled system behavior.
+
+The project was built to explore backend infrastructure, distributed system design, and the challenges of maintaining data integrity and performance under realistic constraints.
 
 ## Features
 
