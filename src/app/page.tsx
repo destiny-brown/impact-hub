@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ActivityFeed from "./activity-feed";
 
 export default function Home() {
   return (
@@ -155,6 +156,8 @@ export default function Home() {
           <span>WITHDRAWN</span>
         </div>
       </section>
+
+      <ActivityFeed />
 
       <section className="organizer-panel" id="organizers">
         <div>

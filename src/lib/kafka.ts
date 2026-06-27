@@ -1,4 +1,12 @@
 import { Kafka } from "kafkajs";
+import { recordPublicActivity } from "@/lib/activity";
+
+export const REQUESTS_TOPIC = "requests";
+
+export type RequestEvent = {
+  type: "REQUEST_CREATED" | "REQUEST_UPDATED";
+  data: unknown;
+};
 
 const kafka = new Kafka({
   clientId: "impact-hub",
@@ -27,20 +35,21 @@ async function connectProducer() {
   }
 }
 
-export async function sendEvent(message: any) {
+export async function sendEvent(event: RequestEvent) {
   try {
+    recordPublicActivity(event);
     await connectProducer();
 
     await producer.send({
-      topic: "requests",
+      topic: REQUESTS_TOPIC,
       messages: [
         {
-          value: JSON.stringify(message),
+          value: JSON.stringify(event),
         },
       ],
     });
 
-    console.log("Event sent:", message);
+    console.log("Event sent:", event);
   } catch (error) {
     console.error("Kafka error:", error);
   }

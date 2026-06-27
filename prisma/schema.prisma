@@ -62,6 +62,7 @@ model VolunteerRequest {
   @@index([volunteerId])
   @@index([eventId])
   @@index([status])
+  @@unique([volunteerId, eventId])
 }
 
 enum RequestStatus {
