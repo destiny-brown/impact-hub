@@ -1,6 +1,15 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server"
 import { forbiddenResponse, getAuthorizedUser } from "@/lib/auth";
+import { z } from "zod";
+
+const createEventSchema = z.object({
+    title: z.string().trim().min(1, "Title is required"),
+    description: z.string().trim().min(1, "Description is required"),
+    location: z.string().trim().min(1, "Location is required"),
+    date: z.coerce.date(),
+    capacity: z.coerce.number().int().positive().optional().nullable(),
+});
 
 //Create a new event
 export async function POST(request: Request) {
@@ -11,11 +20,13 @@ export async function POST(request: Request) {
             return forbiddenResponse();
         }
 
-        const body = await request.json();
+        const parsed = createEventSchema.safeParse(await request.json());
 
-        if (!body.title || !body.description || !body.location || !body.date) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        if (!parsed.success) {
+            return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid event details" }, { status: 400 });
         }
+
+        const body = parsed.data;
 
         const slugBase = body.title.toLowerCase().replace(/\s+/g, '-');
 
@@ -25,8 +36,8 @@ export async function POST(request: Request) {
                 description: body.description,
                 slug: slugBase,
                 location: body.location,
-                date: new Date(body.date),
-                capacity: body.capacity || null,
+                date: body.date,
+                capacity: body.capacity ?? null,
                 
             },
         });

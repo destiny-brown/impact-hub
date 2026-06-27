@@ -20,6 +20,7 @@ type EventForm = {
   location: string;
   date: string;
   description: string;
+  capacity: string;
 };
 
 const initialEventForm: EventForm = {
@@ -27,6 +28,7 @@ const initialEventForm: EventForm = {
   location: "",
   date: "",
   description: "",
+  capacity: "",
 };
 
 export default function DashboardClient({ adminName }: { adminName: string }) {
@@ -77,7 +79,10 @@ export default function DashboardClient({ adminName }: { adminName: string }) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(eventForm),
+      body: JSON.stringify({
+        ...eventForm,
+        capacity: eventForm.capacity ? Number(eventForm.capacity) : null,
+      }),
     });
 
     if (!res.ok) {
@@ -132,6 +137,13 @@ export default function DashboardClient({ adminName }: { adminName: string }) {
             placeholder="Description"
             value={eventForm.description}
             onChange={(event) => setEventForm({ ...eventForm, description: event.target.value })}
+          />
+          <input
+            min="1"
+            placeholder="Capacity"
+            type="number"
+            value={eventForm.capacity}
+            onChange={(event) => setEventForm({ ...eventForm, capacity: event.target.value })}
           />
           <button className="button" type="submit">
             Create event

@@ -1,7 +1,24 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server"
 import { sendEvent } from "@/lib/kafka";
 import { forbiddenResponse, getCurrentUser } from "@/lib/auth";
+import { z } from "zod";
+
+const getRequestsSchema = z.object({
+  eventId: z.string().min(1).optional(),
+  volunteerId: z.string().min(1).optional(),
+});
+
+const createRequestSchema = z.object({
+  eventId: z.string().min(1, "Event is required"),
+  message: z.string().trim().max(500).optional().nullable(),
+});
+
+const updateRequestSchema = z.object({
+  id: z.string().min(1, "Request id is required"),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED", "WITHDRAWN"]),
+});
 
 
 //Get all volunteer requests
@@ -15,8 +32,16 @@ export async function GET(request: Request) {
 
     const {searchParams} = new URL(request.url);
 
-    const eventId = searchParams.get("eventId");
-    const volunteerId = searchParams.get("volunteerId");
+    const parsedQuery = getRequestsSchema.safeParse({
+      eventId: searchParams.get("eventId") ?? undefined,
+      volunteerId: searchParams.get("volunteerId") ?? undefined,
+    });
+
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: "Invalid request filters" }, { status: 400 });
+    }
+
+    const { eventId, volunteerId } = parsedQuery.data;
 
     //build filter
     const filter: any = {};
@@ -66,20 +91,46 @@ export async function POST(request: Request) {
       return forbiddenResponse();
     }
 
-        const body = await request.json();
+    const parsed = createRequestSchema.safeParse(await request.json());
 
-    if (!body.eventId) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-        }
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request details" }, { status: 400 });
+    }
 
-        const newVolunteerRequest = await prisma.volunteerRequest.create({
-            data: {
+    const body = parsed.data;
+
+    const newVolunteerRequest = await prisma.$transaction(async (tx) => {
+      const event = await tx.event.findUnique({
+        where: { id: body.eventId },
+        include: {
+          _count: {
+            select: {
+              volunteerRequests: {
+                where: { status: { in: ["PENDING", "APPROVED"] } },
+              },
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        throw new Error("EVENT_NOT_FOUND");
+      }
+
+      if (event.capacity !== null && event._count.volunteerRequests >= event.capacity) {
+        throw new Error("EVENT_FULL");
+      }
+
+      return tx.volunteerRequest.create({
+        data: {
         volunteerId: user.volunteerId,
-                eventId: body.eventId,
-                message: body.message || null,
+          eventId: body.eventId,
+          message: body.message || null,
                 
             },
-        });
+      });
+    });
+
         await sendEvent({
           type: "REQUEST_CREATED",
           data: newVolunteerRequest,
@@ -87,6 +138,18 @@ export async function POST(request: Request) {
 
         return NextResponse.json(newVolunteerRequest, { status: 201 });
       }  catch (error) {
+        if (error instanceof Error && error.message === "EVENT_NOT_FOUND") {
+          return NextResponse.json({ error: "Event not found" }, { status: 404 });
+        }
+
+        if (error instanceof Error && error.message === "EVENT_FULL") {
+          return NextResponse.json({ error: "This event is already at capacity" }, { status: 409 });
+        }
+
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          return NextResponse.json({ error: "You have already applied for this event" }, { status: 409 });
+        }
+
         console.error(error);
         return NextResponse.json({ error: "Failed to create volunteer request" }, { status: 500 });
     }
@@ -104,41 +167,44 @@ export async function PATCH(request: Request) {
       return forbiddenResponse();
     }
 
-    const body = await request.json();
-    const { id, status } = body;
-    //Check if status is valid
-    if (!id || !status) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-    const normalizedStatus = status.toUpperCase();
+    const parsed = updateRequestSchema.safeParse(await request.json());
 
-    const allowedStatuses = ["PENDING", "APPROVED", "REJECTED", "WITHDRAWN"];
-    
-    
-    //if normalized status is not in allowed statuses, return error
-    if (!allowedStatuses.includes(normalizedStatus)) {
-      return NextResponse.json({ error: `Invalid status value must be one of ${allowedStatuses.join(", ")}` }, 
-      { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request update" }, { status: 400 });
     }
 
-    //find existing request
-    const existingRequest = await prisma.volunteerRequest.findUnique({
-      where: { id },
-    });
+    const { id, status: normalizedStatus } = parsed.data;
 
-    if (!existingRequest) {
-      return NextResponse.json(
-        { error: "Request not found" }, 
-        { status: 404 });
-    }
+    const updatedRequest = await prisma.$transaction(async (tx) => {
+      //find existing request
+      const existingRequest = await tx.volunteerRequest.findUnique({
+        where: { id },
+        include: { event: true },
+      });
 
-    if (
-      existingRequest.status === "APPROVED" || 
-      existingRequest.status === "WITHDRAWN" || 
-      existingRequest.status === "REJECTED"
-    ) {
-      return NextResponse.json({ error: "Cannot update a request that is already approved, rejected, or withdrawn" }, 
-        { status: 422 }); //Unprocessable Entity
+      if (!existingRequest) {
+        throw new Error("REQUEST_NOT_FOUND");
+      }
+
+      if (
+        existingRequest.status === "APPROVED" || 
+        existingRequest.status === "WITHDRAWN" || 
+        existingRequest.status === "REJECTED"
+      ) {
+        throw new Error("REQUEST_CLOSED");
+      }
+
+      if (normalizedStatus === "APPROVED" && existingRequest.event.capacity !== null) {
+        const approvedCount = await tx.volunteerRequest.count({
+          where: {
+            eventId: existingRequest.eventId,
+            status: "APPROVED",
+          },
+        });
+
+        if (approvedCount >= existingRequest.event.capacity) {
+          throw new Error("EVENT_FULL");
+        }
       }
 
       //Build update data
@@ -155,10 +221,12 @@ export async function PATCH(request: Request) {
         updateData.approvedBy = user.id;
       }
 
-    const updatedRequest = await prisma.volunteerRequest.update({
-      where: { id },
-      data: updateData,
+      return tx.volunteerRequest.update({
+        where: { id },
+        data: updateData,
+      });
     });
+
     await sendEvent({
       type: "REQUEST_UPDATED",
       data: updatedRequest,
@@ -170,6 +238,18 @@ export async function PATCH(request: Request) {
       request: updatedRequest,
     }, { status: 200 });
    } catch (error) {
+    if (error instanceof Error && error.message === "REQUEST_NOT_FOUND") {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    if (error instanceof Error && error.message === "REQUEST_CLOSED") {
+      return NextResponse.json({ error: "Cannot update a request that is already approved, rejected, or withdrawn" }, { status: 422 });
+    }
+
+    if (error instanceof Error && error.message === "EVENT_FULL") {
+      return NextResponse.json({ error: "This event is already at capacity" }, { status: 409 });
+    }
+
     console.error(error);
     return NextResponse.json({ error: "Failed to update volunteer request" }, { status: 500 });
     };
