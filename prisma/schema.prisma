@@ -21,6 +21,7 @@ model Event {
 
 model Volunteer {
   id        String             @id @default(cuid())
+  userId    String?            @unique
   fullName  String
   email     String             @unique
   phone     String?
@@ -29,6 +30,18 @@ model Volunteer {
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
   requests  VolunteerRequest[]
+  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  role         UserRole    @default(VOLUNTEER)
+  fullName     String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  volunteer    Volunteer?
 }
 
 model VolunteerRequest {
@@ -56,4 +69,9 @@ enum RequestStatus {
   APPROVED
   REJECTED
   WITHDRAWN
+}
+
+enum UserRole {
+  ADMIN
+  VOLUNTEER
 }

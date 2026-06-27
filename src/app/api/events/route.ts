@@ -1,9 +1,16 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server"
+import { forbiddenResponse, getAuthorizedUser } from "@/lib/auth";
 
 //Create a new event
 export async function POST(request: Request) {
     try {
+        const user = await getAuthorizedUser("ADMIN");
+
+        if (!user) {
+            return forbiddenResponse();
+        }
+
         const body = await request.json();
 
         if (!body.title || !body.description || !body.location || !body.date) {
@@ -41,7 +48,7 @@ console.error("CREATE EVENT ERROR:", error);
 }
 
 //Get all events
-export async function GET(request: Request) {
+export async function GET() {
     const events = await prisma.event.findMany();
     return NextResponse.json(events);
 }

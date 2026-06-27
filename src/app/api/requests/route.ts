@@ -1,11 +1,18 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server"
 import { sendEvent } from "@/lib/kafka";
+import { forbiddenResponse, getCurrentUser } from "@/lib/auth";
 
 
 //Get all volunteer requests
 export async function GET(request: Request) {
   try{
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "You must be logged in" }, { status: 401 });
+    }
+
     const {searchParams} = new URL(request.url);
 
     const eventId = searchParams.get("eventId");
@@ -18,8 +25,16 @@ export async function GET(request: Request) {
       filter.eventId = eventId;
     }
 
-    if (volunteerId) {
-      filter.volunteerId = volunteerId;
+    if (user.role === "ADMIN") {
+      if (volunteerId) {
+        filter.volunteerId = volunteerId;
+      }
+    } else {
+      if (!user.volunteerId) {
+        return NextResponse.json({ error: "Volunteer profile not found" }, { status: 404 });
+      }
+
+      filter.volunteerId = user.volunteerId;
     }
     
     const volunteerRequests = await prisma.volunteerRequest.findMany({
@@ -41,15 +56,25 @@ export async function GET(request: Request) {
 //Create a new volunteer request 
 export async function POST(request: Request) {
     try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "You must be logged in" }, { status: 401 });
+    }
+
+    if (user.role !== "VOLUNTEER" || !user.volunteerId) {
+      return forbiddenResponse();
+    }
+
         const body = await request.json();
 
-        if (!body.volunteerId || !body.eventId) {
+    if (!body.eventId) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
         const newVolunteerRequest = await prisma.volunteerRequest.create({
             data: {
-                volunteerId: body.volunteerId,
+        volunteerId: user.volunteerId,
                 eventId: body.eventId,
                 message: body.message || null,
                 
@@ -69,6 +94,16 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "You must be logged in" }, { status: 401 });
+    }
+
+    if (user.role !== "ADMIN") {
+      return forbiddenResponse();
+    }
+
     const body = await request.json();
     const { id, status } = body;
     //Check if status is valid
@@ -117,6 +152,7 @@ export async function PATCH(request: Request) {
         normalizedStatus === "REJECTED"  
       ) {
         updateData.approvedAt = new Date();
+        updateData.approvedBy = user.id;
       }
 
     const updatedRequest = await prisma.volunteerRequest.update({

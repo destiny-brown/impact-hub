@@ -1,9 +1,16 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server"
+import { forbiddenResponse, getAuthorizedUser } from "@/lib/auth";
 
 //Create a new Volunteer
 export async function POST(request: Request) {
     try {
+        const user = await getAuthorizedUser("ADMIN");
+
+        if (!user) {
+            return forbiddenResponse();
+        }
+
         const body = await request.json();
 
         if (!body.fullName || !body.email || !body.phone || !body.location) {
@@ -29,7 +36,13 @@ export async function POST(request: Request) {
 }
 
 //Get all volunteers
-export async function GET(Request: Request) {
+export async function GET() {
+    const user = await getAuthorizedUser("ADMIN");
+
+    if (!user) {
+        return forbiddenResponse();
+    }
+
     const volunteers = await prisma.volunteer.findMany();
     return NextResponse.json(volunteers);
 
