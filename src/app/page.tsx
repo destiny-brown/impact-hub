@@ -17,51 +17,64 @@ export default function Home() {
 
       <section className="hero-section">
         <div className="hero-copy">
-          <p className="eyebrow">Community charity coordination</p>
-          <h1>Helping local volunteers meet real needs faster.</h1>
+          <p className="eyebrow">Charity organization</p>
+          <h1>Give children and families a stronger future.</h1>
           <p>
-            Impact Hub connects people who want to help with the charity events, outreach days,
-            donation drives, and service projects that need them most.
+            Impact Hub helps your charity publish opportunities, welcome volunteers, and keep
+            every request organized from signup to approval.
           </p>
           <div className="hero-actions">
             <Link className="button" href="/volunteer/register">
-              Become a volunteer
+              Join as a volunteer
             </Link>
             <Link className="button button-muted" href="/volunteer/login">
-              I already have an account
+              Volunteer login
             </Link>
           </div>
         </div>
+      </section>
 
-        <div className="impact-panel" aria-label="Charity impact summary">
-          <div>
-            <span>24</span>
-            <p>active outreach opportunities</p>
-          </div>
-          <div>
-            <span>180+</span>
-            <p>volunteer hours coordinated monthly</p>
-          </div>
-          <div>
-            <span>1</span>
-            <p>admin portal for charity staff decisions</p>
-          </div>
+      <section className="impact-strip" aria-label="Charity impact summary">
+        <div>
+          <span>24</span>
+          <p>active outreach opportunities</p>
+        </div>
+        <div>
+          <span>180+</span>
+          <p>volunteer hours coordinated monthly</p>
+        </div>
+        <div>
+          <span>1</span>
+          <p>private admin portal for charity staff</p>
         </div>
       </section>
 
       <section className="info-grid" aria-label="How Impact Hub works">
         <article>
-          <h2>For volunteers</h2>
-          <p>Create an account, browse upcoming opportunities, and apply for the events where you can help.</p>
+          <span>01</span>
+          <h2>Support the mission</h2>
+          <p>Volunteers create an account, browse upcoming opportunities, and apply for events where they can help.</p>
         </article>
         <article>
-          <h2>For charity staff</h2>
+          <span>02</span>
+          <h2>Manage requests</h2>
           <p>Use the private admin portal to publish events and approve or reject volunteer requests.</p>
         </article>
         <article>
-          <h2>For the community</h2>
+          <span>03</span>
+          <h2>Serve with clarity</h2>
           <p>Keep service work organized so every accepted volunteer has a clear place to show up.</p>
         </article>
+      </section>
+
+      <section className="mission-band">
+        <div>
+          <p className="eyebrow">What we do</p>
+          <h2>Simple tools for real community care.</h2>
+        </div>
+        <p>
+          The public page introduces the charity, volunteers use their own login, and the admin portal stays separate for trusted staff.
+        </p>
       </section>
     </main>
   );
