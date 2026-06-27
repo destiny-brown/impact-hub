@@ -91,6 +91,8 @@ export async function POST(request: Request) {
       return forbiddenResponse();
     }
 
+    const volunteerId = user.volunteerId;
+
     const parsed = createRequestSchema.safeParse(await request.json());
 
     if (!parsed.success) {
@@ -123,7 +125,7 @@ export async function POST(request: Request) {
 
       return tx.volunteerRequest.create({
         data: {
-        volunteerId: user.volunteerId,
+          volunteerId,
           eventId: body.eventId,
           message: body.message || null,
                 
