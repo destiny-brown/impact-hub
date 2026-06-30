@@ -4,6 +4,8 @@ Impact Hub is a full-stack event management platform that coordinates volunteer 
 
 The project was built to explore backend infrastructure, distributed system design, and the challenges of maintaining data integrity and performance under realistic constraints.
 
+**Live URL:** https://impact-hub-hazel.vercel.app
+
 ## Features
 
 - **Role-Based Access:** Separate admin and volunteer authentication flows
