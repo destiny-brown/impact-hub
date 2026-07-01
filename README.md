@@ -177,6 +177,19 @@ From the repository root:
 - `npm run build` – Generate Prisma client and create production build
 - `npm run start` – Start production server
 - `npm run kafka:consumer` – Run local Kafka consumer for analytics/event logs
+- `npm run perf:seed` – Seed staging-safe benchmark data
+- `npm run perf:bench` – Run read-only API benchmarks and write artifacts
+- `npm run perf:run` – Optionally seed and then benchmark using env configuration
+
+## Performance Benchmarks
+
+Repeatable performance benchmarking scripts and the GitHub Actions workflow live in:
+
+- `scripts/perf/`
+- `.github/workflows/perf-benchmark.yml`
+- `docs/perf-testing.md`
+
+Use a Vercel Preview/Production URL for deployed API timing, and only use `perf:seed` with a staging database. The seeding flow refuses production-like targets unless `ALLOW_PROD=true` is explicitly set.
 
 ## API Endpoints
 

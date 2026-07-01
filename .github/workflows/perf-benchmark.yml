@@ -1,0 +1,124 @@
+name: Performance Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Target API base URL (preview or production deployment)"
+        required: false
+        type: string
+      concurrency:
+        description: "Concurrent requests"
+        required: false
+        default: "10"
+        type: string
+      requests:
+        description: "Total benchmark requests"
+        required: false
+        default: "100"
+        type: string
+      warmup_requests:
+        description: "Warmup requests before timed run"
+        required: false
+        default: "10"
+        type: string
+      seed_count:
+        description: "Seeded volunteers/requests when run_seed=true"
+        required: false
+        default: "250"
+        type: string
+      run_seed:
+        description: "Run staging seed before benchmark"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 8 * * 1"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PERF_DATABASE_URL: ${{ secrets.PERF_DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve benchmark configuration
+        env:
+          INPUT_URL: ${{ github.event.inputs.url }}
+          DEFAULT_URL: ${{ vars.PERF_TARGET_API_URL }}
+          SECRET_URL: ${{ secrets.PERF_TARGET_API_URL }}
+          INPUT_CONCURRENCY: ${{ github.event.inputs.concurrency }}
+          INPUT_REQUESTS: ${{ github.event.inputs.requests }}
+          INPUT_WARMUP: ${{ github.event.inputs.warmup_requests }}
+          INPUT_SEED_COUNT: ${{ github.event.inputs.seed_count }}
+          INPUT_RUN_SEED: ${{ github.event.inputs.run_seed }}
+        run: |
+          set -euo pipefail
+
+          target_url="${INPUT_URL:-}"
+          if [ -z "$target_url" ]; then
+            target_url="${DEFAULT_URL:-${SECRET_URL:-}}"
+          fi
+
+          if [ -z "$target_url" ]; then
+            echo "Provide workflow input 'url' or configure PERF_TARGET_API_URL as a repository variable or secret." >&2
+            exit 1
+          fi
+
+          run_seed="${INPUT_RUN_SEED:-false}"
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
+            run_seed="false"
+          fi
+
+          echo "TARGET_API_URL=$target_url" >> "$GITHUB_ENV"
+          echo "CONCURRENCY=${INPUT_CONCURRENCY:-10}" >> "$GITHUB_ENV"
+          echo "TOTAL_REQUESTS=${INPUT_REQUESTS:-100}" >> "$GITHUB_ENV"
+          echo "WARMUP_REQUESTS=${INPUT_WARMUP:-10}" >> "$GITHUB_ENV"
+          echo "SEED_COUNT=${INPUT_SEED_COUNT:-250}" >> "$GITHUB_ENV"
+          echo "RUN_SEED=$run_seed" >> "$GITHUB_ENV"
+          echo "PERF_OUTPUT_DIR=perf-results/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
+
+      - name: Validate staging seed prerequisites
+        if: env.RUN_SEED == 'true'
+        run: |
+          set -euo pipefail
+          if [ -z "${PERF_DATABASE_URL:-}" ]; then
+            echo "PERF_DATABASE_URL secret is required when run_seed=true." >&2
+            exit 1
+          fi
+
+      - name: Run benchmark workflow
+        run: npm run perf:run
+
+      - name: Publish job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -f "${PERF_OUTPUT_DIR}/seed-summary.md" ]; then
+            cat "${PERF_OUTPUT_DIR}/seed-summary.md" >> "$GITHUB_STEP_SUMMARY"
+            printf "\n\n" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -f "${PERF_OUTPUT_DIR}/benchmark-summary.md" ]; then
+            cat "${PERF_OUTPUT_DIR}/benchmark-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
+          path: perf-results/
+          if-no-files-found: error

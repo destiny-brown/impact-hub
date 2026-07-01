@@ -7,7 +7,10 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "kafka:consumer": "tsx src/lib/consumer.ts"
+    "kafka:consumer": "tsx src/lib/consumer.ts",
+    "perf:seed": "tsx scripts/perf/seed.ts",
+    "perf:bench": "tsx scripts/perf/bench.ts",
+    "perf:run": "tsx scripts/perf/run.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
