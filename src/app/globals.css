@@ -565,6 +565,7 @@ p {
 }
 
 .management-grid {
+  align-items: start;
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(280px, 0.42fr) minmax(0, 0.58fr);
@@ -577,9 +578,18 @@ p {
   gap: 1rem;
 }
 
+.create-event-panel {
+  align-content: start;
+}
+
 .requests-panel,
 .event-list {
   align-content: start;
+}
+
+.requests-panel {
+  max-height: min(72vh, 860px);
+  overflow-y: auto;
 }
 
 .request-card,
@@ -715,6 +725,10 @@ p {
 
   .hero-section {
     padding-top: 2.5rem;
+  }
+
+  .requests-panel {
+    max-height: none;
   }
 
   .impact-strip {
