@@ -116,7 +116,7 @@ export default function DashboardClient({ adminName }: { adminName: string }) {
       {message && <p className="notice">{message}</p>}
 
       <section className="management-grid">
-        <form className="panel" onSubmit={createEvent}>
+        <form className="panel create-event-panel" onSubmit={createEvent}>
           <h2>Create event</h2>
           <input
             placeholder="Title"
