@@ -101,12 +101,12 @@ Use these accounts for quick testing in development/demo environments.
 
 - **Name:** Alice Tan
 - **Email:** alice@test.com
-- **Password:** DemoVolunteer123!
+- **Password:** Contact me for password
 
 ### Admin
 
 - **ADMIN_EMAIL:** admin@impacthub.local
-- **ADMIN_PASSWORD:** ChangeMe123!
+- **ADMIN_PASSWORD:** Contact me for password
 - **ADMIN_NAME:** Charity Admin
 
 Admin fallback note:
