@@ -33,7 +33,11 @@ on:
         default: false
         type: boolean
   schedule:
+    # Weekly read-only benchmark to track regressions without repeatedly seeding staging data.
     - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
 
 jobs:
   benchmark:
