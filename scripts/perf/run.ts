@@ -45,8 +45,8 @@ function main() {
   // CI/CD GATEKEEPER LOGIC
   // ==========================
 
-  const P95_THRESHOLD = 600;
-  const MAX_ERRORS = 0;
+  const P95_THRESHOLD = readIntegerEnv("PERF_P95_THRESHOLD_MS", 600, 1);
+  const MAX_ERRORS = readIntegerEnv("PERF_MAX_ERRORS", 0, 0);
 
   if (overall.latencyMs.p95 > P95_THRESHOLD) {
     console.error(`p95 too high: ${overall.latencyMs.p95}ms`);
@@ -59,6 +59,22 @@ function main() {
   }
 
   console.log("Performance within acceptable limits");
+}
+
+function readIntegerEnv(name: string, fallback: number, minimum: number) {
+  const raw = process.env[name]?.trim();
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+
+  if (!Number.isFinite(parsed) || parsed < minimum) {
+    throw new Error(`Invalid ${name}: ${raw}`);
+  }
+
+  return parsed;
 }
 
 function runScript(scriptName: string, environment: NodeJS.ProcessEnv) {

@@ -29,6 +29,8 @@ If you want seeded data to influence benchmark results, point `TARGET_API_URL` a
 | `CONCURRENCY` | No | `10` | Number of concurrent requests |
 | `WARMUP_REQUESTS` | No | `10` | Untimed warmup requests |
 | `PERF_ENDPOINTS` | No | `/api/events,/api/activity` | Comma-separated endpoint paths |
+| `PERF_P95_THRESHOLD_MS` | No | `600` | Fail `perf:run` when overall p95 latency exceeds this value |
+| `PERF_MAX_ERRORS` | No | `0` | Fail `perf:run` when overall error count exceeds this value |
 | `PERF_OUTPUT_DIR` | No | `perf-results/<timestamp>` | Output directory for artifacts |
 
 ### Seed runner

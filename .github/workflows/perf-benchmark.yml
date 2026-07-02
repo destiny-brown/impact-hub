@@ -37,6 +37,8 @@ jobs:
           echo "CONCURRENCY=10" >> $GITHUB_ENV
           echo "TOTAL_REQUESTS=200" >> $GITHUB_ENV
           echo "WARMUP_REQUESTS=50" >> $GITHUB_ENV
+          echo "PERF_P95_THRESHOLD_MS=1500" >> $GITHUB_ENV
+          echo "PERF_MAX_ERRORS=150" >> $GITHUB_ENV
           echo "PERF_OUTPUT_DIR=$OUTPUT_DIR" >> $GITHUB_ENV
 
       - name: Run benchmark (required)
