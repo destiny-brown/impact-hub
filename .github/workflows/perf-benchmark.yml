@@ -1,144 +1,62 @@
 name: Performance Benchmark
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      url:
-        description: "Target API base URL (preview or production deployment)"
-        required: false
-        type: string
-      concurrency:
-        description: "Concurrent requests"
-        required: false
-        default: "10"
-        type: string
-      requests:
-        description: "Total benchmark requests"
-        required: false
-        default: "100"
-        type: string
-      warmup_requests:
-        description: "Warmup requests before timed run"
-        required: false
-        default: "10"
-        type: string
-      seed_count:
-        description: "Seeded volunteers/requests when run_seed=true"
-        required: false
-        default: "250"
-        type: string
-      run_seed:
-        description: "Run staging seed before benchmark"
-        required: false
-        default: false
-        type: boolean
-
-  schedule:
-    - cron: "0 8 * * 1" # weekly read-only benchmark
-
-permissions:
-  contents: read
 
 jobs:
   benchmark:
+    name: benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
-    env:
-      PERF_DATABASE_URL: ${{ secrets.PERF_DATABASE_URL }}
+    permissions:
+      contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Resolve benchmark configuration
-        env:
-          INPUT_URL: ${{ github.event.inputs.url }}
-          DEFAULT_URL: ${{ vars.PERF_TARGET_API_URL }}
-          SECRET_URL: ${{ secrets.PERF_TARGET_API_URL }}
-          INPUT_CONCURRENCY: ${{ github.event.inputs.concurrency }}
-          INPUT_REQUESTS: ${{ github.event.inputs.requests }}
-          INPUT_WARMUP: ${{ github.event.inputs.warmup_requests }}
-          INPUT_SEED_COUNT: ${{ github.event.inputs.seed_count }}
-          INPUT_RUN_SEED: ${{ github.event.inputs.run_seed }}
+      - name: Set environment variables
         run: |
-          set -euo pipefail
-
-          target_url="${INPUT_URL:-}"
-          if [ -z "$target_url" ]; then
-            target_url="${DEFAULT_URL:-${SECRET_URL:-}}"
-          fi
-
-          if [ -z "$target_url" ]; then
-            echo "Provide 'url' input or set PERF_TARGET_API_URL." >&2
-            exit 1
-          fi
-
-          run_seed="${INPUT_RUN_SEED:-false}"
-          if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
-            run_seed="false"
-          fi
-
           OUTPUT_DIR="perf-results/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           mkdir -p "$OUTPUT_DIR"
 
-          echo "TARGET_API_URL=$target_url" >> "$GITHUB_ENV"
-          echo "CONCURRENCY=${INPUT_CONCURRENCY:-10}" >> "$GITHUB_ENV"
-          echo "TOTAL_REQUESTS=${INPUT_REQUESTS:-100}" >> "$GITHUB_ENV"
-          echo "WARMUP_REQUESTS=${INPUT_WARMUP:-10}" >> "$GITHUB_ENV"
-          echo "SEED_COUNT=${INPUT_SEED_COUNT:-250}" >> "$GITHUB_ENV"
-          echo "RUN_SEED=$run_seed" >> "$GITHUB_ENV"
-          echo "PERF_OUTPUT_DIR=$OUTPUT_DIR" >> "$GITHUB_ENV"
-
-      - name: Validate staging seed prerequisites
-        if: env.RUN_SEED == 'true'
-        run: |
-          set -euo pipefail
-          if [ -z "${PERF_DATABASE_URL:-}" ]; then
-            echo "PERF_DATABASE_URL secret is required when run_seed=true." >&2
-            exit 1
+          TARGET_API_URL="${{ vars.PERF_TARGET_API_URL }}"
+          if [ -z "$TARGET_API_URL" ]; then
+            TARGET_API_URL="https://impact-hub-hazel.vercel.app"
           fi
 
-      - name: Run benchmark workflow
-        run: |
-          set -e
-          npm run perf:run || echo "Benchmark script failed but continuing to collect artifacts"
+          echo "TARGET_API_URL=$TARGET_API_URL" >> $GITHUB_ENV
+          echo "CONCURRENCY=3" >> $GITHUB_ENV
+          echo "TOTAL_REQUESTS=60" >> $GITHUB_ENV
+          echo "WARMUP_REQUESTS=10" >> $GITHUB_ENV
+          echo "PERF_P95_THRESHOLD_MS=1200" >> $GITHUB_ENV
+          echo "PERF_MAX_ERRORS=6" >> $GITHUB_ENV
+          echo "PERF_OUTPUT_DIR=$OUTPUT_DIR" >> $GITHUB_ENV
 
-      - name: Debug output directory
+      - name: Run benchmark (required)
+        run: npm run perf:run
+
+      - name: Publish summary
         if: always()
         run: |
-          echo "Listing perf-results directory:"
-          ls -R perf-results || echo "No perf-results found"
-
-      - name: Publish job summary
-        if: always()
-        run: |
-          set -euo pipefail
-
-          if [ -f "${PERF_OUTPUT_DIR}/seed-summary.md" ]; then
-            cat "${PERF_OUTPUT_DIR}/seed-summary.md" >> "$GITHUB_STEP_SUMMARY"
-            printf "\n\n" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
           if [ -f "${PERF_OUTPUT_DIR}/benchmark-summary.md" ]; then
-            cat "${PERF_OUTPUT_DIR}/benchmark-summary.md" >> "$GITHUB_STEP_SUMMARY"
+            cat "${PERF_OUTPUT_DIR}/benchmark-summary.md" >> $GITHUB_STEP_SUMMARY
           else
-            echo "No benchmark summary found." >> "$GITHUB_STEP_SUMMARY"
+            echo "No benchmark summary found." >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload benchmark artifacts
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: perf-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
+          name: perf-results-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.PERF_OUTPUT_DIR }}
           if-no-files-found: warn
