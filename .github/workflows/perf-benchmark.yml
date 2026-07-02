@@ -2,12 +2,12 @@ name: Performance Benchmark
 
 on:
   pull_request:
-  push:
     branches: [main]
   workflow_dispatch:
 
 jobs:
   benchmark:
+    name: benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -32,18 +32,9 @@ jobs:
           echo "WARMUP_REQUESTS=50" >> $GITHUB_ENV
           echo "PERF_OUTPUT_DIR=$OUTPUT_DIR" >> $GITHUB_ENV
 
-      # PR → non-blocking (optional)
-      - name: Run benchmark (PR preview)
-        if: github.event_name == 'pull_request'
-        run: |
-          npm run perf:run || echo "Non-blocking performance warning"
-
-      # MAIN → blocking gatekeeper
-      - name: Run benchmark (gatekeeper)
-        if: github.ref == 'refs/heads/main'
+      - name: Run benchmark (required)
         run: npm run perf:run
 
-      # Always show results
       - name: Publish summary
         if: always()
         run: |
@@ -57,6 +48,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: perf-results
+          name: perf-results-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.PERF_OUTPUT_DIR }}
           if-no-files-found: warn
