@@ -112,7 +112,15 @@ The JSON output includes:
 The `perf-benchmark.yml` workflow runs:
 
 - manually via `workflow_dispatch`
-- weekly on schedule with safe read-only defaults
+- on pull requests targeting `main`
+
+For pull request runs, the workflow uses production-safe benchmark settings:
+
+- `CONCURRENCY=3`
+- `TOTAL_REQUESTS=60`
+- `WARMUP_REQUESTS=10`
+- `PERF_P95_THRESHOLD_MS=1200`
+- `PERF_MAX_ERRORS=6`
 
 ### Required repository configuration
 
