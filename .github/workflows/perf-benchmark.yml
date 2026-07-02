@@ -10,7 +10,6 @@ jobs:
     name: benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: vars.PERF_TARGET_API_URL != ''
     permissions:
       contents: read
 
@@ -29,7 +28,12 @@ jobs:
           OUTPUT_DIR="perf-results/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           mkdir -p "$OUTPUT_DIR"
 
-          echo "TARGET_API_URL=${{ vars.PERF_TARGET_API_URL }}" >> $GITHUB_ENV
+          TARGET_API_URL="${{ vars.PERF_TARGET_API_URL }}"
+          if [ -z "$TARGET_API_URL" ]; then
+            TARGET_API_URL="https://impact-hub-hazel.vercel.app"
+          fi
+
+          echo "TARGET_API_URL=$TARGET_API_URL" >> $GITHUB_ENV
           echo "CONCURRENCY=10" >> $GITHUB_ENV
           echo "TOTAL_REQUESTS=200" >> $GITHUB_ENV
           echo "WARMUP_REQUESTS=50" >> $GITHUB_ENV
