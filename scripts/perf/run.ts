@@ -32,7 +32,7 @@ function main() {
   const resultsPath = path.join(outputDirectory, "benchmark-results.json");
 
   if (!fs.existsSync(resultsPath)) {
-    console.error("No benchmark-results.json found — benchmark did not output results");
+    console.error("No benchmark-results.json found -- benchmark did not output results");
     process.exit(1);
   }
 
@@ -43,7 +43,7 @@ function main() {
 
   // ==========================
   // CI/CD GATEKEEPER LOGIC
-  //  ==========================
+  // ==========================
 
   const P95_THRESHOLD = 600;
   const MAX_ERRORS = 0;
