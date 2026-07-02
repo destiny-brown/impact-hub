@@ -29,30 +29,15 @@ function main() {
   runScript("perf:bench", environment);
 
   // After benchmark finishes → read results
-  const resultsPath = path.join(outputDirectory, "results.json");
+  const resultsPath = path.join(outputDirectory, "benchmark-results.json");
 
   if (!fs.existsSync(resultsPath)) {
-    console.error("No results.json found — benchmark did not output results");
+    console.error("No benchmark-results.json found — benchmark did not output results");
     process.exit(1);
   }
 
   const stats = JSON.parse(fs.readFileSync(resultsPath, "utf-8"));
-
-  // Write summary (guaranteed)
-  const summary = `
-## Benchmark Summary
-
-- Avg latency: ${stats.avg} ms  
-- P95 latency: ${stats.p95} ms  
-- P99 latency: ${stats.p99} ms  
-- Success: ${stats.success}  
-- Errors: ${stats.errors}
-`;
-
-  fs.writeFileSync(
-    path.join(outputDirectory, "benchmark-summary.md"),
-    summary
-  );
+  const overall = stats.overall;
 
   console.log("Summary written to:", outputDirectory);
 
@@ -63,13 +48,13 @@ function main() {
   const P95_THRESHOLD = 600;
   const MAX_ERRORS = 0;
 
-  if (stats.p95 > P95_THRESHOLD) {
-    console.error(`p95 too high: ${stats.p95}ms`);
+  if (overall.latencyMs.p95 > P95_THRESHOLD) {
+    console.error(`p95 too high: ${overall.latencyMs.p95}ms`);
     process.exit(1);
   }
 
-  if (stats.errors > MAX_ERRORS) {
-    console.error(`errors detected: ${stats.errors}`);
+  if (overall.errorCount > MAX_ERRORS) {
+    console.error(`errors detected: ${overall.errorCount}`);
     process.exit(1);
   }
 
